@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>chatApp</title>
+  <link rel="stylesheet" href="./css/sample.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+  <style>
+  </style>
+</head>
+
+<body id="body">
+  <div class="snow"></div>
+  <div class="snow"></div>
+  <div class="snow"></div>
+  <div class="snow"></div>
+  <h1>Chat -winter ver.-</h1>
+  <!-- 入力場所を作成しよう -->
+  <form>
+    <fieldset>
+      <div>
+        <p>Name</p>
+        <input type="text" id="name">
+      </div>
+      <div>
+        <p>Comment</p>
+        <input type="text" id="text">
+      </div>
+      <div>
+        <button type="button" id="send">Send</button>
+      </div>
+      <div>
+        <p>Color</p>
+        <input type="button" class="bgbtn1" value="聖夜">
+        <input type="button" class="bgbtn2" value="寒空">
+      </div>
+    </fieldset>
+  </form>
+
+  <!-- データ出力場所 -->
+  <ul id="output"></ul>
+
+  <script>
+    //聖夜
+    $(".bgbtn1").click(function() {
+      $("#body").css("background-color","#cc0000"); 
+      $("fieldset").css("background-color","#c99c33"); 
+      $("#send").css("background-color","#006622"); 
+      $("#send").css("color","#ffffff"); 
+      $("#output li").css("color","#006622"); 
+      $("#output li").css("background-color","#ffffff"); 
+      $(".bgbtn1,.bgbtn2").css("background-color","#662200"); 
+    });
+    //寒空
+    $(".bgbtn2").click(function() {
+      $("#body").css("background-color","#163442"); 
+      $("fieldset").css("background-color","#555f78"); 
+      $("#send").css("background-color","#e1ddd1"); 
+      $("#send").css("color","#163442"); 
+      $("#output li").css("color","#163442"); 
+      $("#output li").css("background-color","#e1ddd1"); 
+      $(".bgbtn1,.bgbtn2").css("background-color","#14191d"); 
+    });
+  </script>
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+  <script>
+    // 日時をいい感じの形式にする関数
+    function convertTimestampToDatetime(timestamp) {
+      const _d = timestamp ? new Date(timestamp * 1000) : new Date();
+      const Y = _d.getFullYear();
+      const m = (_d.getMonth() + 1).toString().padStart(2, '0');
+      const d = _d.getDate().toString().padStart(2, '0');
+      const H = _d.getHours().toString().padStart(2, '0');
+      const i = _d.getMinutes().toString().padStart(2, '0');
+      const s = _d.getSeconds().toString().padStart(2, '0');
+      return `${Y}/${m}/${d} ${H}:${i}:${s}`;
+    }
+  </script>
+  <!-- 以下にfirebaseのコードを貼り付けよう -->
+  <script type="module">
+    // Import the functions you need from the SDKs you need
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      serverTimestamp,
+      onSnapshot,
+      query,
+      orderBy,
+    } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      //【危険！】GitHubに上げる際絶対消すこと！:除去済み
+      authDomain: "chat-with-ads.firebaseapp.com",
+      projectId: "chat-with-ads",
+      storageBucket: "chat-with-ads.firebasestorage.app",
+      messagingSenderId: "407555040434",
+      appId: "1:407555040434:web:ae9ff0dc54214e0efa15ab"
+    };
+  
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // よくわからないデータを入力してキレイなデータに変換して出力する関数を追加する
+    function chatDocuments(fireStoreDocs) {
+      const documents = [];
+      fireStoreDocs.forEach(function (doc) {
+        const document = {
+          id: doc.id,
+          data: doc.data(),
+        };
+        documents.push(document);
+      });
+      return documents;
+    }
+
+    // 「配列形式にしたチャットのデータ」を入力して「表示用のタグにいれて」出力する関数を追加する
+    function chatElements(chatDocuments) {
+      const elements = [];
+      chatDocuments.forEach(function (document) {
+        elements.push(`
+          <li id="${document.id}">
+            <p class="name">${
+          document.data.name
+        } <span>${convertTimestampToDatetime(document.data.time.seconds)}</span></p>
+            <p class="text">${document.data.text}</p>
+          </li>
+        `);
+      });
+      return elements;
+    }
+
+    const q = query(collection(db, "chat"), orderBy("time", "desc"));
+    onSnapshot(q, (querySnapshot) => {
+      console.log(querySnapshot.docs);
+      const documents = chatDocuments(querySnapshot.docs);
+      console.log(documents);
+      // 配列形式のデータを入力して表示用のタグにいれて出力する
+      const elements = chatElements(documents);
+      $("#output").html(elements);
+    });
+
+    // データの保存
+    $("#send").on("click", function () {
+      const postData = {
+      name: $("#name").val(),
+      text: $("#text").val(),
+      time: serverTimestamp(),
+    };
+      addDoc(collection(db, "chat"), postData);
+      $("#text").val("");
+    });
+
+
+  </script>
+
+
+</body>
+
+</html>
